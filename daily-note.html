@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daily Note | Secret App</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .note-card {
+            background: linear-gradient(135deg, #f6d365 0%, #fda085 100%);
+        }
+        .refresh-btn {
+            transition: transform 0.5s ease;
+        }
+        .refresh-btn:active {
+            transform: rotate(360deg);
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <!-- Header -->
+    <header class="bg-gradient-to-r from-yellow-500 to-orange-500 text-white p-4 shadow-md">
+        <div class="container mx-auto flex justify-between items-center">
+            <h1 class="text-xl font-bold">Daily Note</h1>
+            <a href="dashboard.html" class="bg-white text-yellow-600 px-3 py-1 rounded-full text-sm font-medium hover:bg-gray-100">
+                <i class="fas fa-arrow-left"></i> Back
+            </a>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto p-4">
+        <div class="max-w-2xl mx-auto">
+            <div class="note-card rounded-xl shadow-lg overflow-hidden text-white fade-in">
+                <div class="p-6">
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <h2 class="text-xl font-bold">Your Daily Dose</h2>
+                            <p id="noteDate" class="text-sm opacity-80"></p>
+                        </div>
+                        <button id="refreshNote" class="refresh-btn bg-white bg-opacity-20 p-2 rounded-full">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
+                    </div>
+                    
+                    <div id="dailyNoteContent" class="py-4 text-center">
+                        <i class="fas fa-spinner fa-spin text-2xl"></i>
+                    </div>
+                    
+                    <div class="flex justify-center space-x-2 mt-4">
+                        <button id="prevNote" class="bg-white bg-opacity-20 px-4 py-1 rounded-full text-sm">
+                            <i class="fas fa-chevron-left mr-1"></i> Previous
+                        </button>
+                        <button id="nextNote" class="bg-white bg-opacity-20 px-4 py-1 rounded-full text-sm">
+                            Next <i class="fas fa-chevron-right ml-1"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mt-6 text-center text-gray-500 text-sm">
+                <p>Come back tomorrow for a new note!</p>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Messages database
+        const dailyMessages = [
+            "You are capable of amazing things. Believe in yourself!",
+            "The secret of getting ahead is getting started.",
+            "Happiness is not by chance, but by choice.",
+            "What consumes your mind controls your life.",
+            "Joke: Why don't scientists trust atoms? Because they make up everything!",
+            "You're braver than you believe, stronger than you seem, and smarter than you think.",
+            "Every day may not be good, but there's something good in every day.",
+            "Joke: I told my wife she was drawing her eyebrows too high. She looked surprised.",
+            "The only way to do great work is to love what you do.",
+            "Success is not final, failure is not fatal: It is the courage to continue that counts.",
+            "Joke: Why don't eggs tell jokes? They'd crack each other up!",
+            "You are enough just as you are.",
+            "The best way to predict the future is to create it.",
+            "Joke: What's the best thing about Switzerland? I don't know, but the flag is a big plus."
+        ];
+
+        // Check authentication and load note
+        document.addEventListener('DOMContentLoaded', function() {
+            const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+            
+            if (!currentUser) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            // Set current date
+            const today = new Date();
+            document.getElementById('noteDate').textContent = today.toLocaleDateString('en-US', { 
+                weekday: 'long', 
+                month: 'long', 
+                day: 'numeric' 
+            });
+
+            // Load today's note
+            loadDailyNote();
+
+            // Button event listeners
+            document.getElementById('refreshNote').addEventListener('click', loadDailyNote);
+            document.getElementById('prevNote').addEventListener('click', showPreviousNote);
+            document.getElementById('nextNote').addEventListener('click', showNextNote);
+        });
+
+        function loadDailyNote() {
+            const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+            const today = new Date().toDateString();
+            const lastNote = JSON.parse(localStorage.getItem('lastDailyNote') || '{}');
+            
+            // Check if we already showed a note today
+            if (lastNote.date === today && lastNote.userId === currentUser.id) {
+                displayNote(lastNote.content);
+                return;
+            }
+            
+            // Get a random note
+            const randomIndex = Math.floor(Math.random() * dailyMessages.length);
+            const noteContent = dailyMessages[randomIndex];
+            
+            // Save to localStorage
+            localStorage.setItem('lastDailyNote', JSON.stringify({
+                date: today,
+                content: noteContent,
+                userId: currentUser.id,
+                index: randomIndex
+            }));
+            
+            displayNote(noteContent);
+        }
+
+        function displayNote(content) {
+            const noteEl = document.getElementById('dailyNoteContent');
+            
+            if (content.startsWith('Joke:')) {
+                noteEl.innerHTML = `
+                    <div class="space-y-4">
+                        <i class="fas fa-grin-squint-tears text-4xl text-yellow-200"></i>
+                        <p class="text-lg font-medium">${content.substring(6)}</p>
+                    </div>
+                `;
+            } else {
+                noteEl.innerHTML = `
+                    <div class="space-y-4">
+                        <i class="fas fa-heart text-4xl text-red-200"></i>
+                        <p class="text-lg font-medium">${content}</p>
+                    </div>
+                `;
+            }
+        }
+
+        function showPreviousNote() {
+            const lastNote = JSON.parse(localStorage.getItem('lastDailyNote') || '{}');
+            if (!lastNote.index) return;
+            
+            let prevIndex = lastNote.index - 1;
+            if (prevIndex < 0) prevIndex = dailyMessages.length - 1;
+            
+            const noteContent = dailyMessages[prevIndex];
+            displayNote(noteContent);
+            
+            // Update stored index (but keep original date)
+            lastNote.index = prevIndex;
+            lastNote.content = noteContent;
+            localStorage.setItem('lastDailyNote', JSON.stringify(lastNote));
+        }
+
+        function showNextNote() {
+            const lastNote = JSON.parse(localStorage.getItem('lastDailyNote') || '{}');
+            if (!lastNote.index) return;
+            
+            let nextIndex = lastNote.index + 1;
+            if (nextIndex >= dailyMessages.length) nextIndex = 0;
+            
+            const noteContent = dailyMessages[nextIndex];
+            displayNote(noteContent);
+            
+            // Update stored index (but keep original date)
+            lastNote.index = nextIndex;
+            lastNote.content = noteContent;
+            localStorage.setItem('lastDailyNote', JSON.stringify(lastNote));
+        }
+    </script>
+</body>
+</html>
