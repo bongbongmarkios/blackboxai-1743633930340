@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crush Quiz | Secret App</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .quiz-card {
+            background: linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%);
+        }
+        .option-btn {
+            transition: all 0.2s ease;
+        }
+        .option-btn:hover:not(.selected) {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .selected {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <!-- Header -->
+    <header class="bg-gradient-to-r from-green-500 to-teal-500 text-white p-4 shadow-md">
+        <div class="container mx-auto flex justify-between items-center">
+            <h1 class="text-xl font-bold">Crush Quiz</h1>
+            <a href="dashboard.html" class="bg-white text-green-600 px-3 py-1 rounded-full text-sm font-medium hover:bg-gray-100">
+                <i class="fas fa-arrow-left"></i> Back
+            </a>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto p-4">
+        <div class="max-w-2xl mx-auto">
+            <div id="quizContainer" class="quiz-card rounded-xl shadow-lg overflow-hidden text-gray-800 fade-in">
+                <!-- Quiz content will be loaded here -->
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Quiz questions and answers
+        const quizData = [
+            {
+                question: "How would you describe your ideal date?",
+                options: [
+                    "Romantic dinner by candlelight",
+                    "Adventure in the great outdoors",
+                    "Netflix and chill at home",
+                    "I don't believe in dating"
+                ],
+                scores: [3, 2, 1, 0]
+            },
+            {
+                question: "What's your love language?",
+                options: [
+                    "Words of affirmation",
+                    "Quality time",
+                    "Physical touch",
+                    "Acts of service",
+                    "Receiving gifts"
+                ],
+                scores: [2, 3, 1, 2, 1]
+            },
+            {
+                question: "How do you handle conflict in relationships?",
+                options: [
+                    "Talk it out immediately",
+                    "Need some space first",
+                    "Avoid confrontation",
+                    "What conflict? I'm perfect"
+                ],
+                scores: [3, 2, 1, 0]
+            },
+            {
+                question: "What's your idea of a perfect gift?",
+                options: [
+                    "Something handmade with love",
+                    "An experience we can share",
+                    "Something practical I need",
+                    "Just your presence is enough"
+                ],
+                scores: [2, 3, 1, 2]
+            },
+            {
+                question: "How important is physical attraction?",
+                options: [
+                    "Very important",
+                    "Somewhat important",
+                    "Personality matters more",
+                    "I don't care about looks"
+                ],
+                scores: [1, 2, 3, 1]
+            }
+        ];
+
+        // Secret messages based on total score
+        const resultMessages = [
+            {
+                minScore: 0,
+                maxScore: 5,
+                title: "Independent Spirit",
+                message: "You value your independence highly! You're not easily swayed by romantic notions, but when you do fall, it's deep and meaningful."
+            },
+            {
+                minScore: 6,
+                maxScore: 10,
+                title: "Hopeful Romantic",
+                message: "You've got a romantic heart but keep it well guarded. You believe in love but want to be sure before opening up completely."
+            },
+            {
+                minScore: 11,
+                maxScore: 15,
+                title: "True Romantic",
+                message: "You're a true romantic at heart! You believe in love stories, grand gestures, and deep connections. Your ideal partner appreciates this about you."
+            }
+        ];
+
+        // Quiz state
+        let currentQuestion = 0;
+        let score = 0;
+        let answers = [];
+
+        // Check authentication and initialize quiz
+        document.addEventListener('DOMContentLoaded', function() {
+            const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+            
+            if (!currentUser) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            loadQuestion();
+        });
+
+        function loadQuestion() {
+            const quizContainer = document.getElementById('quizContainer');
+            
+            if (currentQuestion >= quizData.length) {
+                showResults();
+                return;
+            }
+
+            const question = quizData[currentQuestion];
+            
+            quizContainer.innerHTML = `
+                <div class="p-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-xl font-bold">Question ${currentQuestion + 1}/${quizData.length}</h2>
+                        <span class="bg-white bg-opacity-30 px-3 py-1 rounded-full text-sm">Crush Quiz</span>
+                    </div>
+                    
+                    <p class="text-lg mb-6">${question.question}</p>
+                    
+                    <div class="space-y-3">
+                        ${question.options.map((option, index) => `
+                            <button class="option-btn w-full text-left bg-white bg-opacity-70 p-4 rounded-lg" 
+                                    data-index="${index}">
+                                ${option}
+                            </button>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+
+            // Add event listeners to options
+            document.querySelectorAll('.option-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    // Remove selected class from all buttons
+                    document.querySelectorAll('.option-btn').forEach(b => {
+                        b.classList.remove('selected');
+                    });
+                    
+                    // Add selected class to clicked button
+                    this.classList.add('selected');
+                    
+                    // Store the answer
+                    const selectedIndex = parseInt(this.getAttribute('data-index'));
+                    answers[currentQuestion] = selectedIndex;
+                    
+                    // Add to score
+                    score += quizData[currentQuestion].scores[selectedIndex];
+                    
+                    // Move to next question after delay
+                    setTimeout(() => {
+                        currentQuestion++;
+                        loadQuestion();
+                    }, 800);
+                });
+            });
+        }
+
+        function showResults() {
+            const quizContainer = document.getElementById('quizContainer');
+            const result = resultMessages.find(r => 
+                score >= r.minScore && score <= r.maxScore
+            );
+            
+            quizContainer.innerHTML = `
+                <div class="p-6 text-center">
+                    <div class="w-20 h-20 bg-white bg-opacity-30 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-heart text-3xl text-pink-500"></i>
+                    </div>
+                    
+                    <h2 class="text-2xl font-bold mb-2">${result.title}</h2>
+                    <p class="text-lg mb-6">${result.message}</p>
+                    
+                    <div class="bg-white bg-opacity-30 rounded-lg p-4 mb-6">
+                        <p class="font-medium">Your score: ${score}/${quizData.length * 3}</p>
+                        <div class="w-full bg-gray-200 rounded-full h-2.5 mt-2">
+                            <div class="bg-gradient-to-r from-green-400 to-blue-500 h-2.5 rounded-full" 
+                                 style="width: ${(score / (quizData.length * 3)) * 100}%"></div>
+                        </div>
+                    </div>
+                    
+                    <button id="retakeQuiz" class="bg-white text-teal-600 px-6 py-2 rounded-full font-medium">
+                        <i class="fas fa-redo mr-2"></i> Retake Quiz
+                    </button>
+                </div>
+            `;
+            
+            document.getElementById('retakeQuiz').addEventListener('click', function() {
+                currentQuestion = 0;
+                score = 0;
+                answers = [];
+                loadQuestion();
+            });
+        }
+    </script>
+</body>
+</html>
