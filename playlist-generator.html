@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Playlist Generator | Secret App</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .mood-card {
+            transition: all 0.3s ease;
+        }
+        .mood-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+        }
+        .mood-card.selected {
+            border: 3px solid #3b82f6;
+            transform: scale(1.05);
+        }
+        .player-container {
+            transition: all 0.5s ease;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <!-- Header -->
+    <header class="bg-gradient-to-r from-blue-500 to-indigo-500 text-white p-4 shadow-md">
+        <div class="container mx-auto flex justify-between items-center">
+            <h1 class="text-xl font-bold">Playlist Generator</h1>
+            <a href="dashboard.html" class="bg-white text-blue-600 px-3 py-1 rounded-full text-sm font-medium hover:bg-gray-100">
+                <i class="fas fa-arrow-left"></i> Back
+            </a>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto p-4">
+        <div class="max-w-3xl mx-auto">
+            <!-- Mood Selection -->
+            <div class="bg-white rounded-xl shadow-md overflow-hidden mb-6 fade-in">
+                <div class="p-6">
+                    <h2 class="text-xl font-bold mb-4">Select Your Mood</h2>
+                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-4" id="moodSelection">
+                        <!-- Mood options will be added here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Playlist Player -->
+            <div id="playerContainer" class="player-container opacity-0 h-0 overflow-hidden">
+                <div class="bg-white rounded-xl shadow-md overflow-hidden">
+                    <div class="p-6">
+                        <div class="flex justify-between items-center mb-4">
+                            <h2 class="text-xl font-bold" id="playlistTitle">Your Playlist</h2>
+                            <button id="refreshPlaylist" class="text-blue-500 hover:text-blue-700">
+                                <i class="fas fa-sync-alt"></i> Refresh
+                            </button>
+                        </div>
+                        
+                        <div class="aspect-w-16 aspect-h-9 mb-4">
+                            <iframe id="youtubePlayer" class="w-full h-64 sm:h-80 rounded-lg" 
+                                    frameborder="0" allowfullscreen
+                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture">
+                            </iframe>
+                        </div>
+                        
+                        <div class="flex flex-wrap gap-2" id="playlistLinks">
+                            <!-- Playlist links will be added here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Moods and their corresponding YouTube Music playlists
+        const moodPlaylists = [
+            {
+                name: "Happy",
+                emoji: "😊",
+                query: "happy%20upbeat%20songs",
+                color: "from-yellow-400 to-amber-400"
+            },
+            {
+                name: "Sad",
+                emoji: "😢",
+                query: "sad%20emotional%20songs",
+                color: "from-blue-400 to-indigo-500"
+            },
+            {
+                name: "Energetic",
+                emoji: "⚡",
+                query: "high%20energy%20workout%20songs",
+                color: "from-red-500 to-orange-500"
+            },
+            {
+                name: "Chill",
+                emoji: "🍃",
+                query: "chill%20lofi%20beats",
+                color: "from-green-400 to-teal-400"
+            },
+            {
+                name: "Romantic",
+                emoji: "💖",
+                query: "romantic%20love%20songs",
+                color: "from-pink-500 to-rose-500"
+            },
+            {
+                name: "Focus",
+                emoji: "🧠",
+                query: "focus%20study%20music",
+                color: "from-purple-500 to-indigo-500"
+            }
+        ];
+
+        // Current selected mood
+        let currentMood = null;
+
+        // Check authentication and initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+            
+            if (!currentUser) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            loadMoodOptions();
+        });
+
+        function loadMoodOptions() {
+            const moodContainer = document.getElementById('moodSelection');
+            
+            moodContainer.innerHTML = moodPlaylists.map(mood => `
+                <div class="mood-card cursor-pointer bg-gradient-to-r ${mood.color} text-white rounded-lg p-4 text-center" 
+                     data-mood="${mood.query}" data-name="${mood.name}">
+                    <div class="text-4xl mb-2">${mood.emoji}</div>
+                    <h3 class="font-medium">${mood.name}</h3>
+                </div>
+            `).join('');
+
+            // Add click event to mood cards
+            document.querySelectorAll('.mood-card').forEach(card => {
+                card.addEventListener('click', function() {
+                    // Remove selected class from all cards
+                    document.querySelectorAll('.mood-card').forEach(c => {
+                        c.classList.remove('selected');
+                    });
+                    
+                    // Add selected class to clicked card
+                    this.classList.add('selected');
+                    
+                    // Set current mood
+                    currentMood = {
+                        query: this.getAttribute('data-mood'),
+                        name: this.getAttribute('data-name')
+                    };
+                    
+                    // Generate playlist
+                    generatePlaylist();
+                });
+            });
+        }
+
+        function generatePlaylist() {
+            if (!currentMood) return;
+            
+            // Show loading state
+            const playerContainer = document.getElementById('playerContainer');
+            playerContainer.innerHTML = `
+                <div class="bg-white rounded-xl shadow-md overflow-hidden p-6 text-center">
+                    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+                    <p>Generating your ${currentMood.name.toLowerCase()} playlist...</p>
+                </div>
+            `;
+            playerContainer.classList.remove('opacity-0', 'h-0');
+            playerContainer.classList.add('opacity-100', 'h-auto');
+            
+            // Generate random playlist ID (simulating API call)
+            setTimeout(() => {
+                // In a real app, this would be an actual API call to YouTube Music
+                const playlistId = generateRandomPlaylistId();
+                const playlistUrl = `https://music.youtube.com/playlist?list=${playlistId}`;
+                const searchUrl = `https://music.youtube.com/search?q=${currentMood.query}`;
+                
+                // Update player
+                document.getElementById('playlistTitle').textContent = `${currentMood.name} Playlist`;
+                
+                // YouTube iframe player (note: this is a simplified example)
+                // In a real implementation, you would use the YouTube API
+                document.getElementById('youtubePlayer').src = 
+                    `https://www.youtube.com/embed/videoseries?list=${playlistId}&autoplay=1`;
+                
+                // Playlist links
+                const linksContainer = document.getElementById('playlistLinks');
+                linksContainer.innerHTML = `
+                    <a href="${playlistUrl}" target="_blank" 
+                       class="inline-flex items-center bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600">
+                        <i class="fab fa-youtube mr-2"></i> Open in YouTube Music
+                    </a>
+                    <a href="${searchUrl}" target="_blank" 
+                       class="inline-flex items-center bg-gray-200 text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-300">
+                        <i class="fas fa-search mr-2"></i> Search for more
+                    </a>
+                `;
+                
+                // Show refresh button
+                document.getElementById('refreshPlaylist').addEventListener('click', generatePlaylist);
+            }, 1500);
+        }
+
+        function generateRandomPlaylistId() {
+            // This is a mock function - in a real app you would use actual playlist IDs
+            const prefixes = ['PL', 'OL', 'RD'];
+            const randomPrefix = prefixes[Math.floor(Math.random() * prefixes.length)];
+            let id = randomPrefix;
+            
+            for (let i = 0; i < 15; i++) {
+                id += String.fromCharCode(65 + Math.floor(Math.random() * 26));
+            }
+            
+            return id;
+        }
+    </script>
+</body>
+</html>
