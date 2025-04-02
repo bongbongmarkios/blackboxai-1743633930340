@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Treasure Hunt | Secret App</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .treasure-card {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+        .clue-box {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(5px);
+        }
+        .hint-btn {
+            transition: all 0.3s ease;
+        }
+        .hint-btn:hover {
+            transform: scale(1.05);
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <!-- Header -->
+    <header class="bg-gradient-to-r from-amber-500 to-yellow-500 text-white p-4 shadow-md">
+        <div class="container mx-auto flex justify-between items-center">
+            <h1 class="text-xl font-bold">Treasure Hunt</h1>
+            <a href="dashboard.html" class="bg-white text-amber-600 px-3 py-1 rounded-full text-sm font-medium hover:bg-gray-100">
+                <i class="fas fa-arrow-left"></i> Back
+            </a>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto p-4">
+        <div class="max-w-2xl mx-auto">
+            <div class="treasure-card rounded-xl shadow-lg overflow-hidden text-white fade-in">
+                <div class="p-6">
+                    <div id="gameContainer">
+                        <!-- Game content will be loaded here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Game data
+        const treasureHunt = {
+            clues: [
+                {
+                    text: "Clue 1: I have keys but no locks. I have space but no room. You can enter but can't go outside. What am I?",
+                    answer: "keyboard",
+                    hint: "You're using one right now to read this message"
+                },
+                {
+                    text: "Clue 2: I'm light as a feather, yet the strongest person can't hold me for more than a few minutes. What am I?",
+                    answer: "breath",
+                    hint: "It's something you do constantly without thinking"
+                },
+                {
+                    text: "Clue 3: The more you take, the more you leave behind. What am I?",
+                    answer: "footsteps",
+                    hint: "Think about walking in the sand"
+                },
+                {
+                    text: "Final Clue: What has to be broken before you can use it?",
+                    answer: "egg",
+                    hint: "It's something you might eat for breakfast"
+                }
+            ],
+            finalReward: {
+                title: "Congratulations! 🎉",
+                message: "You've solved all the clues and found the treasure! Your prize is knowing you're brilliant at solving puzzles. Here's a special code for you: TREASURE2024"
+            }
+        };
+
+        // Game state
+        let currentClue = 0;
+        let hintsUsed = 0;
+        const maxHints = 3;
+
+        // Check authentication and initialize game
+        document.addEventListener('DOMContentLoaded', function() {
+            const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+            
+            if (!currentUser) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            // Load saved progress if exists
+            const savedProgress = JSON.parse(localStorage.getItem('treasureHuntProgress') || '{}');
+            if (savedProgress.userId === currentUser.id) {
+                currentClue = savedProgress.currentClue || 0;
+                hintsUsed = savedProgress.hintsUsed || 0;
+            }
+
+            loadClue();
+        });
+
+        function loadClue() {
+            const gameContainer = document.getElementById('gameContainer');
+            
+            if (currentClue >= treasureHunt.clues.length) {
+                showFinalReward();
+                return;
+            }
+
+            const clue = treasureHunt.clues[currentClue];
+            
+            gameContainer.innerHTML = `
+                <div class="text-center mb-6">
+                    <div class="w-16 h-16 bg-white bg-opacity-20 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-map-marker-alt text-2xl"></i>
+                    </div>
+                    <h2 class="text-xl font-bold mb-2">Clue ${currentClue + 1} of ${treasureHunt.clues.length}</h2>
+                    <p class="text-sm opacity-80">Hints used: ${hintsUsed}/${maxHints}</p>
+                </div>
+                
+                <div class="clue-box rounded-lg p-4 mb-6">
+                    <p class="text-lg mb-4">${clue.text}</p>
+                    
+                    <div class="relative">
+                        <input type="text" id="clueAnswer" 
+                               class="w-full bg-white bg-opacity-20 border border-white border-opacity-30 rounded-lg px-4 py-2 text-white placeholder-white placeholder-opacity-50 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50" 
+                               placeholder="Type your answer here...">
+                    </div>
+                </div>
+                
+                <div class="flex justify-between">
+                    <button id="useHint" class="hint-btn bg-white bg-opacity-20 px-4 py-2 rounded-lg text-sm ${hintsUsed >= maxHints ? 'opacity-50 cursor-not-allowed' : ''}">
+                        <i class="fas fa-lightbulb mr-1"></i> Use Hint (${maxHints - hintsUsed} left)
+                    </button>
+                    
+                    <button id="submitAnswer" class="bg-white text-amber-600 px-6 py-2 rounded-lg font-medium">
+                        Submit Answer
+                    </button>
+                </div>
+            `;
+
+            // Event listeners
+            document.getElementById('submitAnswer').addEventListener('click', checkAnswer);
+            document.getElementById('clueAnswer').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') checkAnswer();
+            });
+
+            if (hintsUsed < maxHints) {
+                document.getElementById('useHint').addEventListener('click', showHint);
+            }
+        }
+
+        function checkAnswer() {
+            const userAnswer = document.getElementById('clueAnswer').value.toLowerCase().trim();
+            const correctAnswer = treasureHunt.clues[currentClue].answer;
+            
+            if (userAnswer === correctAnswer) {
+                // Correct answer
+                currentClue++;
+                saveProgress();
+                
+                // Show success animation
+                const gameContainer = document.getElementById('gameContainer');
+                gameContainer.innerHTML = `
+                    <div class="text-center py-8">
+                        <div class="w-20 h-20 bg-white bg-opacity-20 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <i class="fas fa-check text-3xl text-green-300"></i>
+                        </div>
+                        <h2 class="text-xl font-bold mb-2">Correct!</h2>
+                        <p class="mb-4">You solved this clue!</p>
+                        <button id="nextClue" class="bg-white text-amber-600 px-6 py-2 rounded-lg font-medium">
+                            ${currentClue < treasureHunt.clues.length ? 'Next Clue' : 'Claim Treasure'}
+                        </button>
+                    </div>
+                `;
+                
+                document.getElementById('nextClue').addEventListener('click', loadClue);
+            } else {
+                // Wrong answer
+                alert("That's not quite right. Try again!");
+                document.getElementById('clueAnswer').focus();
+            }
+        }
+
+        function showHint() {
+            if (hintsUsed >= maxHints) return;
+            
+            hintsUsed++;
+            saveProgress();
+            
+            const hint = treasureHunt.clues[currentClue].hint;
+            alert(`💡 Hint: ${hint}`);
+            
+            // Update UI
+            if (hintsUsed >= maxHints) {
+                document.getElementById('useHint').classList.add('opacity-50', 'cursor-not-allowed');
+            }
+            document.getElementById('useHint').innerHTML = `
+                <i class="fas fa-lightbulb mr-1"></i> Use Hint (${maxHints - hintsUsed} left)
+            `;
+        }
+
+        function showFinalReward() {
+            const gameContainer = document.getElementById('gameContainer');
+            const reward = treasureHunt.finalReward;
+            
+            gameContainer.innerHTML = `
+                <div class="text-center py-8">
+                    <div class="w-24 h-24 bg-white bg-opacity-20 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <i class="fas fa-trophy text-4xl text-yellow-300"></i>
+                    </div>
+                    <h2 class="text-2xl font-bold mb-4">${reward.title}</h2>
+                    <p class="text-lg mb-6">${reward.message}</p>
+                    
+                    <div class="bg-white bg-opacity-20 rounded-lg p-4 mb-6">
+                        <p class="font-mono text-lg">${reward.message.split(': ')[1]}</p>
+                    </div>
+                    
+                    <button id="playAgain" class="bg-white text-amber-600 px-6 py-2 rounded-lg font-medium">
+                        <i class="fas fa-redo mr-2"></i> Play Again
+                    </button>
+                </div>
+            `;
+            
+            document.getElementById('playAgain').addEventListener('click', function() {
+                currentClue = 0;
+                hintsUsed = 0;
+                saveProgress();
+                loadClue();
+            });
+            
+            // Clear progress since game is complete
+            localStorage.removeItem('treasureHuntProgress');
+        }
+
+        function saveProgress() {
+            const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+            localStorage.setItem('treasureHuntProgress', JSON.stringify({
+                userId: currentUser.id,
+                currentClue: currentClue,
+                hintsUsed: hintsUsed
+            }));
+        }
+    </script>
+</body>
+</html>
