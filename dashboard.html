@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard | Secret App</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .app-icon {
+            transition: all 0.2s ease;
+        }
+        .app-icon:hover {
+            transform: scale(1.1);
+        }
+        .app-icon:active {
+            transform: scale(0.95);
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <!-- Header -->
+    <header class="bg-gradient-to-r from-purple-500 to-blue-500 text-white p-4 shadow-md">
+        <div class="container mx-auto flex justify-between items-center">
+            <h1 class="text-xl font-bold">Secret App</h1>
+            <div class="flex items-center space-x-4">
+                <span id="usernameDisplay" class="font-medium"></span>
+                <button id="logoutBtn" class="bg-white text-purple-600 px-3 py-1 rounded-full text-sm font-medium hover:bg-gray-100">
+                    Logout
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto p-4">
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
+            <!-- App Icons -->
+            <a href="secret-admirer.html" class="app-icon flex flex-col items-center">
+                <div class="w-16 h-16 bg-gradient-to-br from-pink-500 to-red-500 rounded-2xl flex items-center justify-center text-white text-2xl mb-2">
+                    <i class="fas fa-heart"></i>
+                </div>
+                <span class="text-sm text-center">Secret Admirer</span>
+            </a>
+
+            <a href="daily-note.html" class="app-icon flex flex-col items-center">
+                <div class="w-16 h-16 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-2xl flex items-center justify-center text-white text-2xl mb-2">
+                    <i class="fas fa-sticky-note"></i>
+                </div>
+                <span class="text-sm text-center">Daily Note</span>
+            </a>
+
+            <a href="crush-quiz.html" class="app-icon flex flex-col items-center">
+                <div class="w-16 h-16 bg-gradient-to-br from-green-500 to-teal-500 rounded-2xl flex items-center justify-center text-white text-2xl mb-2">
+                    <i class="fas fa-question-circle"></i>
+                </div>
+                <span class="text-sm text-center">Crush Quiz</span>
+            </a>
+
+            <a href="treasure-hunt.html" class="app-icon flex flex-col items-center">
+                <div class="w-16 h-16 bg-gradient-to-br from-amber-500 to-yellow-500 rounded-2xl flex items-center justify-center text-white text-2xl mb-2">
+                    <i class="fas fa-map-marked-alt"></i>
+                </div>
+                <span class="text-sm text-center">Treasure Hunt</span>
+            </a>
+
+            <a href="playlist-generator.html" class="app-icon flex flex-col items-center">
+                <div class="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-2xl flex items-center justify-center text-white text-2xl mb-2">
+                    <i class="fas fa-music"></i>
+                </div>
+                <span class="text-sm text-center">Playlist</span>
+            </a>
+
+            <a href="gallery.html" class="app-icon flex flex-col items-center">
+                <div class="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center text-white text-2xl mb-2">
+                    <i class="fas fa-images"></i>
+                </div>
+                <span class="text-sm text-center">Gallery</span>
+            </a>
+        </div>
+    </main>
+
+    <script>
+        // Check authentication
+        document.addEventListener('DOMContentLoaded', function() {
+            const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+            
+            if (!currentUser) {
+                window.location.href = 'login.html';
+                return;
+            }
+            
+            // Display username
+            document.getElementById('usernameDisplay').textContent = currentUser.username;
+            
+            // Logout functionality
+            document.getElementById('logoutBtn').addEventListener('click', function() {
+                localStorage.removeItem('currentUser');
+                window.location.href = 'login.html';
+            });
+        });
+    </script>
+</body>
+</html>
